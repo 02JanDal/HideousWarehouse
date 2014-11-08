@@ -16,6 +16,7 @@ public:
 	EXCEPTION_FOR_THIS_CLASS
 
 	static QByteArray openAndRead(const QString &filename);
+	static void openAndWrite(const QString &filename, const QByteArray &data);
 
 	QFile *file() const { return m_file; }
 

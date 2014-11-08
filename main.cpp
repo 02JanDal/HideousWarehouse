@@ -16,8 +16,9 @@ int main(int argc, char **argv)
 	std::function<bool()> lambda;lambda = [&current, lambda]()
 	{
 		bool ok = false;
-		const QString dir = QInputDialog::getItem(nullptr, QObject::tr("Choose Project"), QObject::tr("Please input the full path of the project you want to open"),
-												  QStringList() << "/home/jan/projects/MultiMC5/CMakeLists.txt", -1, true, &ok);
+		//const QString dir = QInputDialog::getItem(nullptr, QObject::tr("Choose Project"), QObject::tr("Please input the full path of the project you want to open"),
+		//										  QStringList() << "/home/jan/projects/MultiMC5/CMakeLists.txt", -1, true, &ok);
+		const QString dir = "/home/jan/projects/MultiMC5/CMakeLists.txt";ok=true;
 		if (!ok)
 		{
 			qApp->quit();

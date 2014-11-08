@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QStringListModel>
 
 #include "Project.h"
 #include "Document.h"
@@ -33,12 +34,15 @@ private slots:
 	void on_actionAbout_Qt_triggered();
 
 	void setCurrentDocument(BaseDocument *document);
+	void updateCompletionModel();
 
 private:
 	Ui::MainWindow *ui;
 	BaseProject *m_project;
 	QFileSystemModel *m_fsModel;
 	DocumentModel *m_docModel;
+	BaseDocument *m_currentDocument = nullptr;
+	QStringListModel *m_completionModel;
 
 signals:
 	void changeProject();

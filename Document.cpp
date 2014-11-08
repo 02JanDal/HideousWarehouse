@@ -1,8 +1,25 @@
 #include "Document.h"
 
 #include <QPlainTextDocumentLayout>
+#include <QMimeDatabase>
+#include <QDebug>
 
 #include "File.h"
+
+DocumentModel *DocumentModel::instance;
+
+BaseDocument *BaseDocument::createDocument(BaseProject *project, const QString &filename, QObject *parent)
+{
+	const QMimeType mime = QMimeDatabase().mimeTypeForFile(filename);
+	if (mime.allAncestors().contains("text/x-csrc") || mime.name() == "text/x-csrc")
+	{
+		return new CppDocument(project, filename, parent);
+	}
+	else
+	{
+		return new BaseDocument(project, filename, parent);
+	}
+}
 
 BaseDocument::BaseDocument(BaseProject *project, const QString &filename, QObject *parent) :
 	QObject(parent), m_document(new QTextDocument(this)), m_project(project), m_filename(filename)
@@ -21,10 +38,22 @@ void BaseDocument::saveDocument()
 	File(m_filename).write(m_document->toPlainText().toUtf8());
 }
 
+CppDocument::CppDocument(BaseProject *project, const QString &filename, QObject *parent)
+	: BaseDocument(project, filename, parent)
+{
+	m_highlighter = new CppSyntaxHighlighter(this);
+	m_outline = new CppOutlineModel(this);
+	CppManager::instance()->registerDocument(this, m_outline, m_highlighter);
+}
+QList<QPair<QString, int> > CppDocument::completions(unsigned int line, unsigned int column) const
+{
+	return CppManager::instance()->complete(this, line, column);
+}
 
 DocumentModel::DocumentModel(BaseProject *project, QObject *parent)
 	: QAbstractListModel(parent), m_project(project)
 {
+	instance = this;
 }
 
 int DocumentModel::rowCount(const QModelIndex &) const
@@ -66,7 +95,7 @@ BaseDocument *DocumentModel::open(const QString &filename)
 	{
 		return doc;
 	}
-	BaseDocument *document = new BaseDocument(m_project, filename, this);
+	BaseDocument *document = BaseDocument::createDocument(m_project, filename, this);
 	beginInsertRows(QModelIndex(), m_documents.size(), m_documents.size());
 	m_documents.append(document);
 	endInsertRows();
@@ -79,3 +108,18 @@ void DocumentModel::close(int row)
 	endRemoveRows();
 	document->deleteLater();
 }
+
+QList<BaseDocument *> DocumentModel::getUnsavedDocuments() const
+{
+	QList<BaseDocument *> out;
+	for (auto doc : m_documents)
+	{
+		if (doc->document()->isModified())
+		{
+			out.append(doc);
+		}
+	}
+	return out;
+}
+
+#include "Document.moc"

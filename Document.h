@@ -5,19 +5,29 @@
 #include <QAbstractListModel>
 
 #include "Project.h"
+#include "CppParser.h"
 
 class BaseDocument : public QObject
 {
 	Q_OBJECT
 	Q_PROPERTY(QTextDocument *document READ document CONSTANT)
+	Q_PROPERTY(BaseProject *project READ project CONSTANT)
 	Q_PROPERTY(QString filename READ filename CONSTANT)
 	Q_PROPERTY(QString title READ title CONSTANT STORED false)
 public:
-	explicit BaseDocument(BaseProject *project, const QString &filename, QObject *parent = 0);
+	static BaseDocument *createDocument(BaseProject *project, const QString &filename, QObject *parent = nullptr);
 
 	QTextDocument *document() const { return m_document; }
+	BaseProject *project() const { return m_project; }
 	QString filename() const { return m_filename; }
 	QString title() const { return m_filename.mid(m_filename.lastIndexOf('/') + 1); }
+
+	virtual QAbstractItemModel *outlineModel() {}
+	virtual QList<QPair<QString, int>> completions(unsigned int line, unsigned int column) const {}
+
+protected:
+	explicit BaseDocument(BaseProject *project, const QString &filename, QObject *parent = nullptr);
+
 
 signals:
 
@@ -29,6 +39,20 @@ private:
 	QTextDocument *m_document;
 	BaseProject *m_project;
 	QString m_filename;
+};
+
+class CppDocument : public BaseDocument
+{
+	Q_OBJECT
+public:
+	explicit CppDocument(BaseProject *project, const QString &filename, QObject *parent = nullptr);
+
+	QAbstractItemModel *outlineModel() override { return m_outline; }
+	QList<QPair<QString, int>> completions(unsigned int line, unsigned int column) const override;
+
+private:
+	CppSyntaxHighlighter *m_highlighter;
+	CppOutlineModel *m_outline;
 };
 
 class DocumentModel : public QAbstractListModel
@@ -49,6 +73,10 @@ public:
 
 	BaseDocument *open(const QString &filename);
 	void close(int row);
+
+	QList<BaseDocument *> getUnsavedDocuments() const;
+
+	static DocumentModel *instance;
 
 private:
 	BaseProject *m_project;

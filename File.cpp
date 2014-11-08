@@ -21,6 +21,14 @@ QByteArray File::openAndRead(const QString &filename)
 	return file.read();
 }
 
+void File::openAndWrite(const QString &filename, const QByteArray &data)
+{
+	File file(filename);
+	file.open(QFile::WriteOnly);
+	file.write(data);
+	file.close();
+}
+
 void File::setFilename(const QString &filename)
 {
 	m_file->setFileName(filename);
