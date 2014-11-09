@@ -3,14 +3,15 @@
 #include <QMainWindow>
 #include <QStringListModel>
 
-#include "Project.h"
-#include "Document.h"
+#include "core/BaseProject.h"
+#include "core/BaseDocument.h"
 
 namespace Ui {
 class MainWindow;
 }
 
 class QFileSystemModel;
+class DocumentModel;
 
 class MainWindow : public QMainWindow
 {
@@ -42,7 +43,6 @@ private:
 	QFileSystemModel *m_fsModel;
 	DocumentModel *m_docModel;
 	BaseDocument *m_currentDocument = nullptr;
-	QStringListModel *m_completionModel;
 
 signals:
 	void changeProject();

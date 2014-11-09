@@ -248,7 +248,7 @@
   <customwidget>
    <class>TextEdit</class>
    <extends>QPlainTextEdit</extends>
-   <header>TextEdit.h</header>
+   <header>gui/TextEdit.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

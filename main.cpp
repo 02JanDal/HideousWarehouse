@@ -2,14 +2,17 @@
 #include <QInputDialog>
 #include <functional>
 
-#include "MainWindow.h"
-#include "Project.h"
+#include "gui/MainWindow.h"
+#include "core/BaseProject.h"
+#include "core/PluginManager.h"
 
 int main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
 	app.setApplicationName("CEdit");
 	app.setOrganizationName("JanDalheimer");
+
+	PluginManager::instance()->load();
 
 	MainWindow *current;
 
@@ -28,7 +31,7 @@ int main(int argc, char **argv)
 		{
 			return lambda();
 		}
-		current = new MainWindow(BaseProject::createProject(QFileInfo(dir)));
+		current = new MainWindow(PluginManager::instance()->createProject(QFileInfo(dir)));
 		current->show();
 		QObject::connect(current, &MainWindow::changeProject, lambda);
 		return true;

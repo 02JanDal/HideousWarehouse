@@ -8,62 +8,9 @@
 #include <QSettings>
 #include <QCompleter>
 
-#include "File.h"
-
-class GitIgnoreFilterModel : public QSortFilterProxyModel
-{
-	Q_OBJECT
-public:
-	explicit GitIgnoreFilterModel(QObject *parent = nullptr)
-		: QSortFilterProxyModel(parent) {}
-
-	void setGitIgnoreFile(const QString &file)
-	{
-		const QList<QByteArray> lines = File::openAndRead(file).split('\n');
-		for (const QByteArray line : lines)
-		{
-			if (line.startsWith('#') || line.isEmpty())
-			{
-				continue;
-			}
-			m_excludes.append(QRegularExpression("^" + QFileInfo(file).dir().absoluteFilePath(QString::fromLocal8Bit(line)).replace(".", "\\.").replace("*", ".*")));
-		}
-		sort(0);
-	}
-
-private:
-	bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override
-	{
-		const QString path = source_parent.child(source_row, 0).data(QFileSystemModel::FilePathRole).toString();
-		for (const auto exclude : m_excludes)
-		{
-			if (exclude.match(path).hasMatch())
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-	bool lessThan(const QModelIndex &left, const QModelIndex &right) const override
-	{
-		const bool leftDir = QFileInfo(left.data(QFileSystemModel::FilePathRole).toString()).isDir();
-		const bool rightDir = QFileInfo(right.data(QFileSystemModel::FilePathRole).toString()).isDir();
-		if (leftDir == rightDir)
-		{
-			return QSortFilterProxyModel::lessThan(left, right);
-		}
-		else if (leftDir)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	QList<QRegularExpression> m_excludes;
-};
+#include "core/PluginManager.h"
+#include "core/GitIgnoreFilterModel.h"
+#include "core/DocumentModel.h"
 
 MainWindow::MainWindow(BaseProject *project, QWidget *parent) :
 	QMainWindow(parent),
@@ -102,8 +49,6 @@ MainWindow::MainWindow(BaseProject *project, QWidget *parent) :
 		setCurrentDocument(m_docModel->at(index));
 	});
 
-	m_completionModel = new QStringListModel(this);
-	ui->editor->completer()->setModel(m_completionModel);
 	connect(ui->editor, &QPlainTextEdit::cursorPositionChanged, this, &MainWindow::updateCompletionModel, Qt::QueuedConnection);
 
 	QSettings settings;
@@ -181,16 +126,17 @@ void MainWindow::setCurrentDocument(BaseDocument *document)
 {
 	if (m_currentDocument)
 	{
-		disconnect(m_currentDocument->document(), 0, this, 0);
 	}
 	if (document)
 	{
+		ui->editor->completer()->setModel(document->completionModel());
 		ui->openDocumentsView->selectionModel()->clearSelection();
 		ui->openDocumentsView->selectionModel()->setCurrentIndex(m_docModel->index(document), QItemSelectionModel::SelectCurrent);
 		ui->outlineView->setModel(document->outlineModel());
 	}
 	else
 	{
+		ui->editor->completer()->setModel(nullptr);
 		ui->openDocumentsView->selectionModel()->clear();
 		ui->outlineView->setModel(nullptr);
 	}
@@ -203,13 +149,7 @@ void MainWindow::updateCompletionModel()
 	QTextCursor cursor = ui->editor->textCursor();
 	cursor.movePosition(QTextCursor::Left);
 	cursor.movePosition(QTextCursor::StartOfWord);
-	QStringList completions;
-	const auto tmp = m_currentDocument->completions(cursor.blockNumber(), cursor.positionInBlock());
-	for (const auto t : tmp)
-	{
-		completions.append(t.first);
-	}
-	m_completionModel->setStringList(completions);
+	m_currentDocument->complete(cursor.blockNumber(), cursor.positionInBlock());
 }
 
 #include "MainWindow.moc"

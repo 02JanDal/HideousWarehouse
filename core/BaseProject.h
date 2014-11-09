@@ -30,49 +30,26 @@ class BaseProject : public QObject
 	Q_PROPERTY(Type type READ type)
 	Q_PROPERTY(ProjectCodeModel codeModel READ codeModel NOTIFY codeModelChanged)
 public:
-	static BaseProject *createProject(const QFileInfo &info, QObject *parent = nullptr);
-
 	enum Type
 	{
 		Plain,
 		CMake
 	};
 
+	explicit BaseProject(const QDir &projectRoot, const Type type, QObject *parent = nullptr);
+
 	QDir projectRoot() const { return m_projectRoot; }
 	Type type() const { return m_type; }
 	ProjectCodeModel *codeModel() const { return m_codeModel; }
-
-protected:
-	explicit BaseProject(const QDir &projectRoot, const Type type, QObject *parent = nullptr);
 
 signals:
 	void codeModelChanged();
 
 public slots:
-	virtual void updateCodeModel() = 0;
+	virtual void updateCodeModel() {}
 
 protected:
 	Type m_type;
 	QDir m_projectRoot;
 	ProjectCodeModel *m_codeModel = nullptr;
-};
-
-class CMakeProject : public BaseProject
-{
-	Q_OBJECT
-public:
-	explicit CMakeProject(const QDir &projectRoot, QObject *parent = nullptr);
-
-private:
-	void updateCodeModel() override;
-};
-
-class PlainProject : public BaseProject
-{
-	Q_OBJECT
-public:
-	explicit PlainProject(const QDir &projectRoot, QObject *parent = nullptr);
-
-private:
-	void updateCodeModel() override;
 };
